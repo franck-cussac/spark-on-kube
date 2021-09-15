@@ -1,0 +1,43 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: word-count
+  namespace: spark
+spec:
+  type: Scala
+  mode: cluster
+  sparkVersion: 3.1.1
+  image: franckcussac/wordcount:2
+  imagePullPolicy: Always
+  mainClass: xke.local.WordCount
+  mainApplicationFile: local:///opt/spark/examples/jars/word-count-0.0.1-SNAPSHOT-shaded.jar
+  hadoopConf:
+    "fs.s3a.server-side-encryption-algorithm": "SSE-KMS"
+    "fs.s3a.acl.default": "BucketOwnerFullControl"
+    "fs.s3a.endpoint": "s3-eu-west-1.amazonaws.com"
+    "fs.s3a.signing-algorithm": "S3SignerType"
+  driver:
+    javaOptions: "-Dcom.amazonaws.services.s3.enableV4"
+    env:
+      - name: INPUT
+        value: "s3a://dev-ked-kube-datalake/data/input.txt"
+      - name: OUTPUT
+        value: "s3a://dev-ked-kube-datalake/data/output"
+    cores: 1
+    coreLimit: "1200m"
+    memory: "512m"
+    hostNetwork: true
+    labels:
+      version: 3.1.1
+    serviceAccount: spark-kube
+  executor:
+    serviceAccount: spark-kube
+    javaOptions: "-Dcom.amazonaws.services.s3.enableV4"
+    env:
+      - name: INPUT
+        value: "s3a://dev-ked-kube-datalake/data/input.txt"
+      - name: OUTPUT
+        value: "s3a://dev-ked-kube-datalake/data/output"
+    cores: 1
+    instances: 3
+    memory: "512m"
